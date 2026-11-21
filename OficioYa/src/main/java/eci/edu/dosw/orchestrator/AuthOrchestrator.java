@@ -3,10 +3,12 @@ package eci.edu.dosw.orchestrator;
 import eci.edu.dosw.orchestrator.exception.AccountInactiveException;
 import eci.edu.dosw.orchestrator.exception.DuplicateUserException;
 import eci.edu.dosw.orchestrator.exception.ForbiddenRoleException;
+import eci.edu.dosw.orchestrator.exception.IdentityServiceUnavailableException;
 import eci.edu.dosw.orchestrator.exception.InvalidCredentialsException;
 import eci.edu.dosw.orchestrator.exception.InvalidOtpException;
 import eci.edu.dosw.orchestrator.exception.OtpRateLimitException;
 import eci.edu.dosw.orchestrator.exception.UserNotFoundException;
+import eci.edu.dosw.orchestrator.exception.WeakPasswordException;
 import eci.edu.dosw.notification.NotificationService;
 import eci.edu.dosw.orchestrator.dto.ChangePasswordRequest;
 import eci.edu.dosw.orchestrator.dto.ForgotPasswordRequest;
@@ -123,7 +125,15 @@ public class AuthOrchestrator {
             }
         }
 
-        identityClient.validatePassword(request.password());
+        try {
+            identityClient.validatePassword(request.password());
+        } catch (IdentityServiceUnavailableException e) {
+            if (jwtService == null) {
+                throw e;
+            }
+            log.warn("Identity service no disponible al validar contraseña, aplicando política local");
+            validarPoliticaLocal(request.password());
+        }
 
         if (userService.findByEmail(request.email()).isPresent()) {
             throw new DuplicateUserException();
@@ -135,12 +145,29 @@ public class AuthOrchestrator {
         try {
             identityClient.createCredential(creado.id(), creado.email(), request.password());
             log.info("Usuario registrado exitosamente con userId={}", creado.id());
+        } catch (IdentityServiceUnavailableException e) {
+            if (jwtService == null) {
+                deshacerPerfil(creado.id(), e);
+                throw e;
+            }
+            log.warn("Identity service no disponible al crear credencial para userId={}, conservando perfil en Users",
+                    creado.id());
         } catch (RuntimeException e) {
             deshacerPerfil(creado.id(), e);
             throw e;
         }
 
         return creado;
+    }
+
+    private void validarPoliticaLocal(String password) {
+        if (password == null || password.length() < 8
+                || !password.chars().anyMatch(Character::isUpperCase)
+                || !password.chars().anyMatch(Character::isLowerCase)
+                || !password.chars().anyMatch(Character::isDigit)
+                || !password.chars().anyMatch(ch -> !Character.isLetterOrDigit(ch))) {
+            throw new WeakPasswordException();
+        }
     }
 
     /** Cambia la contraseña de un usuario autenticado. */

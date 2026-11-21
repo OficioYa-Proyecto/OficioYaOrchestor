@@ -222,6 +222,27 @@ class AuthOrchestratorTest {
     }
 
     @Test
+    void siIdentityEstaCaidoAlRegistrarConJwtServiceConservaElPerfilYValidaLocalmente() {
+        eci.edu.dosw.security.JwtService jwtService = mock(eci.edu.dosw.security.JwtService.class);
+        AuthOrchestrator conRespaldo = new AuthOrchestrator(userService, notificationService, identityClient, jwtService);
+        UserDto creado = perfilCreado();
+        when(userService.findByEmail(CORREO)).thenReturn(Optional.empty());
+        when(userService.createProfile(any(NewUser.class))).thenReturn(creado);
+        doThrow(new IdentityServiceUnavailableException("caido"))
+                .when(identityClient).validatePassword(anyString());
+        doThrow(new IdentityServiceUnavailableException("caido"))
+                .when(identityClient).createCredential(USER_ID_9, CORREO, CLAVE);
+
+        UserDto resultado = conRespaldo.register(solicitudDeRegistro(List.of("CONTRATANTE")));
+
+        assertEquals(creado, resultado);
+        verify(userService, never()).deleteProfile(any());
+        assertThrows(WeakPasswordException.class,
+                () -> conRespaldo.register(new RegisterRequest("Ana", CORREO, "debil",
+                        List.of(new PhoneDTO("+573001234567", true)), List.of("CONTRATANTE"), "1998-05-15")));
+    }
+
+    @Test
     void siTambienFallaElBorradoSeConservaElErrorOriginal() {
         when(userService.findByEmail(CORREO)).thenReturn(Optional.empty());
         when(userService.createProfile(any(NewUser.class))).thenReturn(perfilCreado());
