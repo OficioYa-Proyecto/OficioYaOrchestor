@@ -1,0 +1,30 @@
+name: PR Verification Tests
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+
+jobs:
+  verify:
+    name: Maven Verify
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./OficioYa
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+          cache-dependency-path: OficioYa/pom.xml
+
+      - name: Run Maven verify
+        run: mvn -B verify
