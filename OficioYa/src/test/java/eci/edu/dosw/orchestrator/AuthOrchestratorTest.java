@@ -139,6 +139,24 @@ class AuthOrchestratorTest {
 
     // ---------- register ----------
 
+    /**
+     * Verifica que, cuando el servicio de identidad no está disponible durante el inicio de sesión,
+     * el orquestador propague el error y no genere ningún token sin haber validado la clave.
+     */
+    @Test
+    void loginConIdentityCaidoNuncaEmiteUnTokenSinVerificarLaClave() {
+        eci.edu.dosw.security.JwtService jwtService = mock(eci.edu.dosw.security.JwtService.class);
+        AuthOrchestrator conJwt = new AuthOrchestrator(userService, notificationService, identityClient, jwtService);
+        when(userService.findByEmail(CORREO)).thenReturn(Optional.of(usuario(true)));
+        when(identityClient.login(USER_ID, CLAVE, ROLES))
+                .thenThrow(new IdentityServiceUnavailableException("caido"));
+
+        assertThrows(IdentityServiceUnavailableException.class,
+                () -> conJwt.login(new LoginRequest(CORREO, CLAVE)));
+
+        verify(jwtService, never()).generateUserToken(any(), any());
+    }
+
     @Test
     void registroExitosoValidaLaClaveLuegoCreaElPerfilYLaCredencial() {
         UserDto creado = perfilCreado();
