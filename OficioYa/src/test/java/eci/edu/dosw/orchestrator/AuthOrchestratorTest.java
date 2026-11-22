@@ -240,25 +240,37 @@ class AuthOrchestratorTest {
     }
 
     @Test
-    void siIdentityEstaCaidoAlRegistrarConJwtServiceConservaElPerfilYValidaLocalmente() {
+    void siIdentityEstaCaidoAlCrearLaCredencialConJwtServiceSeBorraElPerfil() {
         eci.edu.dosw.security.JwtService jwtService = mock(eci.edu.dosw.security.JwtService.class);
-        AuthOrchestrator conRespaldo = new AuthOrchestrator(userService, notificationService, identityClient, jwtService);
+        AuthOrchestrator conJwt = new AuthOrchestrator(userService, notificationService, identityClient, jwtService);
         UserDto creado = perfilCreado();
         when(userService.findByEmail(CORREO)).thenReturn(Optional.empty());
         when(userService.createProfile(any(NewUser.class))).thenReturn(creado);
         doThrow(new IdentityServiceUnavailableException("caido"))
-                .when(identityClient).validatePassword(anyString());
-        doThrow(new IdentityServiceUnavailableException("caido"))
                 .when(identityClient).createCredential(USER_ID_9, CORREO, CLAVE);
 
-        UserDto resultado = conRespaldo.register(solicitudDeRegistro(List.of("CONTRATANTE")));
+        assertThrows(IdentityServiceUnavailableException.class,
+                () -> conJwt.register(solicitudDeRegistro(List.of("CONTRATANTE"))));
 
-        assertEquals(creado, resultado);
-        verify(userService, never()).deleteProfile(any());
-        assertThrows(WeakPasswordException.class,
-                () -> conRespaldo.register(new RegisterRequest("Ana", CORREO, "debil",
-                        List.of(new PhoneDTO("+573001234567", true)), List.of("CONTRATANTE"), "1998-05-15")));
+        verify(userService).deleteProfile(USER_ID_9);
     }
+
+    @Test
+    void siIdentityEstaCaidoAlValidarLaClaveConJwtServiceNoSeCreaNada() {
+        eci.edu.dosw.security.JwtService jwtService = mock(eci.edu.dosw.security.JwtService.class);
+        AuthOrchestrator conJwt = new AuthOrchestrator(userService, notificationService, identityClient, jwtService);
+        when(userService.findByEmail(CORREO)).thenReturn(Optional.empty());
+        when(userService.createProfile(any(NewUser.class))).thenReturn(perfilCreado());
+        doThrow(new IdentityServiceUnavailableException("caido"))
+                .when(identityClient).validatePassword(anyString());
+
+        assertThrows(IdentityServiceUnavailableException.class,
+                () -> conJwt.register(solicitudDeRegistro(List.of("CONTRATANTE"))));
+
+        verify(userService, never()).createProfile(any(NewUser.class));
+        verify(identityClient, never()).createCredential(any(), anyString(), anyString());
+    }
+
 
     @Test
     void siTambienFallaElBorradoSeConservaElErrorOriginal() {
