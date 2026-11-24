@@ -1,15 +1,10 @@
-# 🛠️ OficioYa Orchestrator & API Gateway
-
-[![Java 21](https://img.shields.io/badge/Java-21-orange.svg)](https://www.oracle.com/java/technologies/downloads/#java21)
-[![Spring Boot 3](https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen.svg)](https://spring.io/projects/spring-boot)
-[![Swagger](https://img.shields.io/badge/Swagger-OpenAPI%203.0-blue.svg)](https://oficioya-orchestor-api-ghaxfaacfabxh4bv.chilecentral-01.azurewebsites.net/swagger-ui/index.html)
-[![Azure Deployed](https://img.shields.io/badge/Azure-Web%20App-0089D6.svg)](https://oficioya-orchestor-api-ghaxfaacfabxh4bv.chilecentral-01.azurewebsites.net)
+#  OficioYa Orchestrator & API Gateway
 
 El **Orquestador de OficioYa** actúa como el punto de entrada unificado (**API Gateway**) y coordinador de flujos distribuidos para toda la plataforma OficioYa. Centraliza la autenticación, autorización basada en roles (JWT), enrutamiento inteligente por proxy inverso hacia los microservicios y agregación de respuestas compuestas.
 
 ---
 
-## 📐 Documentación, Diagramas y Diseño
+##  Documentación, Diagramas y Diseño
 
 Acceso a los diagramas de arquitectura, modelos de dominio y prototipos de la plataforma:
 
@@ -25,7 +20,7 @@ Acceso a los diagramas de arquitectura, modelos de dominio y prototipos de la pl
 
 ---
 
-## 🏛️ Microservicios y Dominios Orquestados
+##  Microservicios y Dominios Orquestados
 
 El orquestador coordina la comunicación y redirige las solicitudes de clientes autenticados y anónimos hacia los microservicios especializados:
 
@@ -50,7 +45,7 @@ flowchart TD
 
 ---
 
-## 🚀 Cómo correr el proyecto en local
+##  Cómo correr el proyecto en local
 
 ### Requisitos previos
 * **Java 21 (LTS)**
@@ -105,7 +100,7 @@ Requiere configurar la clave JWT secreta y las URLs correspondientes:
 
 ---
 
-## ⚙️ Variables de Entorno
+##  Variables de Entorno
 
 | Variable | Descripción | Valor por defecto |
 | :--- | :--- | :--- |
@@ -120,7 +115,7 @@ Requiere configurar la clave JWT secreta y las URLs correspondientes:
 
 ---
 
-## 🧪 Pruebas Unitarias e Integración
+##  Pruebas Unitarias e Integración
 
 Para ejecutar la suite completa de pruebas:
 ```bash
