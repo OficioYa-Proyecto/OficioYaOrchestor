@@ -31,6 +31,12 @@ public class LocalNotificationService implements NotificationService {
     }
 
     @Override
+    public void sendRegistrationVerificationCode(String email, String code, int validMinutes) {
+        enviados.add(new SentMessage("REGISTRATION_CODE", email, code));
+        log.info("[LOCAL] Codigo de activacion de registro para {}: {} (valido {} min)", email, code, validMinutes);
+    }
+
+    @Override
     public void sendPasswordChangedNotice(String email) {
         enviados.add(new SentMessage("PASSWORD_CHANGED", email, null));
         log.info("[LOCAL] Aviso de cambio de contrasena para {}", email);

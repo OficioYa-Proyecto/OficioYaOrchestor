@@ -49,6 +49,13 @@ public class HttpNotificationService implements NotificationService {
     }
 
     @Override
+    public void sendRegistrationVerificationCode(String email, String code, int validMinutes) {
+        String subject = "Código de activación de cuenta - OficioYa";
+        String body = "Tu código de activación para OficioYa es: " + code + " (válido por " + validMinutes + " minutos).";
+        sendEmail(new EmailPayload(email, subject, body, "REGISTRATION_CODE"));
+    }
+
+    @Override
     public void sendPasswordChangedNotice(String email) {
         String subject = "Aviso de cambio de contraseña - OficioYa";
         String body = "Tu contraseña en OficioYa fue actualizada exitosamente.";

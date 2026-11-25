@@ -464,4 +464,60 @@ class AuthOrchestratorTest {
 
         verify(identityClient).resetPassword(USER_ID, "123456", NUEVA);
     }
+
+    @Test
+    void enviarCodigoRegistroExitoso() {
+        when(userService.findByEmail(CORREO)).thenReturn(Optional.empty());
+
+        assertDoesNotThrow(() -> orchestrator.sendRegistrationCode(CORREO));
+
+        verify(notificationService).sendRegistrationVerificationCode(eq(CORREO), anyString(), eq(RegistrationOtpService.VALID_MINUTES));
+    }
+
+    @Test
+    void enviarCodigoRegistroConCorreoDuplicadoDaError() {
+        when(userService.findByEmail(CORREO)).thenReturn(Optional.of(usuario(true)));
+
+        assertThrows(DuplicateUserException.class, () -> orchestrator.sendRegistrationCode(CORREO));
+
+        verify(notificationService, never()).sendRegistrationVerificationCode(any(), any(), anyInt());
+    }
+
+    @Test
+    void enviarCodigoRegistroConDominioOficioYaDaError() {
+        assertThrows(IllegalArgumentException.class, () -> orchestrator.sendRegistrationCode("alguien@oficioya.com"));
+
+        verify(notificationService, never()).sendRegistrationVerificationCode(any(), any(), anyInt());
+    }
+
+    @Test
+    void registroConCodigoOtpValidoEsExitoso() {
+        when(userService.findByEmail(CORREO)).thenReturn(Optional.empty());
+        when(userService.createProfile(any(NewUser.class))).thenReturn(usuario(true));
+
+        orchestrator.sendRegistrationCode(CORREO);
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        verify(notificationService).sendRegistrationVerificationCode(eq(CORREO), captor.capture(), eq(RegistrationOtpService.VALID_MINUTES));
+        String code = captor.getValue();
+
+        RegisterRequest req = new RegisterRequest("Ana", CORREO, CLAVE,
+                List.of(new PhoneDTO("3001234567", true)), ROLES, "1995-05-15", 1, code);
+
+        UserDto res = orchestrator.register(req);
+        assertNotNull(res);
+        verify(identityClient).createCredential(USER_ID, CORREO, CLAVE);
+    }
+
+    @Test
+    void registroConCodigoOtpInvalidoLanzaExcepcion() {
+        when(userService.findByEmail(CORREO)).thenReturn(Optional.empty());
+        orchestrator.sendRegistrationCode(CORREO);
+
+        RegisterRequest req = new RegisterRequest("Ana", CORREO, CLAVE,
+                List.of(new PhoneDTO("3001234567", true)), ROLES, "1995-05-15", 1, "999999");
+
+        assertThrows(InvalidOtpException.class, () -> orchestrator.register(req));
+        verify(userService, never()).createProfile(any());
+        verify(identityClient, never()).createCredential(any(), any(), any());
+    }
 }

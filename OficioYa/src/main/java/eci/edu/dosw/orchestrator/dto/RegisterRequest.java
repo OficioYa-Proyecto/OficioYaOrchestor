@@ -14,7 +14,19 @@ public record RegisterRequest(
         @NotEmpty(message = "Debe ingresar al menos un teléfono") List<@Valid PhoneDTO> phones,
         @NotEmpty(message = "Debe seleccionar al menos un rol") List<String> roles,
         String birthDate,
-        Integer localityId) {
+        Integer localityId,
+        String code) {
+
+    public RegisterRequest(
+            String name,
+            String email,
+            String password,
+            List<PhoneDTO> phones,
+            List<String> roles,
+            String birthDate,
+            Integer localityId) {
+        this(name, email, password, phones, roles, birthDate, localityId, null);
+    }
 
     public RegisterRequest(
             String name,
