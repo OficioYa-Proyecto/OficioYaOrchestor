@@ -234,6 +234,73 @@ class AuthControllerTest {
     }
 
     @Nested
+    @DisplayName("Endpoint POST /api/v1/auth/register/send-code")
+    class SendRegisterCodeTests {
+
+        @Test
+        @DisplayName("200 OK al solicitar código de verificación exitosamente")
+        void sendRegisterCodeExitoso() throws Exception {
+            doNothing().when(authOrchestrator).sendRegistrationCode("usuario@gmail.com");
+
+            mockMvc.perform(post("/api/v1/auth/register/send-code")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                      "email": "usuario@gmail.com"
+                                    }
+                                    """))
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("400 BAD REQUEST con correo de formato inválido")
+        void sendRegisterCodeFormatoInvalido() throws Exception {
+            mockMvc.perform(post("/api/v1/auth/register/send-code")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                      "email": "correo-no-valido"
+                                    }
+                                    """))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message", containsString("formato de correo no es válido")));
+        }
+
+        @Test
+        @DisplayName("409 CONFLICT si el correo ya está registrado")
+        void sendRegisterCodeCorreoDuplicado() throws Exception {
+            doThrow(new DuplicateUserException()).when(authOrchestrator).sendRegistrationCode("duplicado@gmail.com");
+
+            mockMvc.perform(post("/api/v1/auth/register/send-code")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                      "email": "duplicado@gmail.com"
+                                    }
+                                    """))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.message", containsString("registrado con ese correo")));
+        }
+
+        @Test
+        @DisplayName("429 TOO MANY REQUESTS si excede el rate limit de envíos")
+        void sendRegisterCodeRateLimit() throws Exception {
+            doThrow(new OtpRateLimitException("Debe esperar 60 segundos antes de solicitar otro código."))
+                    .when(authOrchestrator).sendRegistrationCode("ratelimit@gmail.com");
+
+            mockMvc.perform(post("/api/v1/auth/register/send-code")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                      "email": "ratelimit@gmail.com"
+                                    }
+                                    """))
+                    .andExpect(status().isTooManyRequests())
+                    .andExpect(jsonPath("$.message", containsString("Debe esperar 60 segundos")));
+        }
+    }
+
+    @Nested
     @DisplayName("Endpoint PUT /api/v1/auth/change")
     class ChangePasswordTests {
 

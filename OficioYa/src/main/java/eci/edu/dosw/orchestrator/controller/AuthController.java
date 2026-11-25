@@ -9,6 +9,7 @@ import eci.edu.dosw.orchestrator.dto.LoginRequest;
 import eci.edu.dosw.orchestrator.dto.LoginResponse;
 import eci.edu.dosw.orchestrator.dto.RegisterRequest;
 import eci.edu.dosw.orchestrator.dto.ResetPasswordRequest;
+import eci.edu.dosw.orchestrator.dto.SendRegisterOtpRequest;
 import eci.edu.dosw.user.UserDto;
 import eci.edu.dosw.orchestrator.exception.InvalidCredentialsException;
 import io.swagger.v3.oas.annotations.Operation;
@@ -75,6 +76,21 @@ public class AuthController {
         Object principal = authentication.getPrincipal();
         UUID userId = principal instanceof UUID uuid ? uuid : UUID.fromString(String.valueOf(principal));
         return authOrchestrator.refreshToken(userId);
+    }
+
+    @Operation(summary = "Enviar código de activación para registro", description = "Genera y envía un código OTP por correo electrónico para verificar la titularidad de la cuenta antes del registro.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Código enviado exitosamente"),
+        @ApiResponse(responseCode = "400", description = "Correo inválido o de dominio no permitido",
+                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "409", description = "El correo ya se encuentra registrado",
+                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "429", description = "Límite de solicitudes de código excedido",
+                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @PostMapping("/register/send-code")
+    public void sendRegisterCode(@Valid @RequestBody SendRegisterOtpRequest request) {
+        authOrchestrator.sendRegistrationCode(request.email());
     }
 
     @Operation(summary = "Registrar nuevo usuario", description = "Registra un usuario en User Domain y crea su credencial en Identity Domain.")

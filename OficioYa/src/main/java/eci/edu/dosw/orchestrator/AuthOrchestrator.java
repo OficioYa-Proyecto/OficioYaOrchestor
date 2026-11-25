@@ -45,22 +45,32 @@ public class AuthOrchestrator {
     private final NotificationService notificationService;
     private final IdentityClient identityClient;
     private final JwtService jwtService;
+    private final RegistrationOtpService registrationOtpService;
 
     public AuthOrchestrator(UserService userService,
             NotificationService notificationService,
             IdentityClient identityClient) {
-        this(userService, notificationService, identityClient, null);
+        this(userService, notificationService, identityClient, null, new RegistrationOtpService());
+    }
+
+    public AuthOrchestrator(UserService userService,
+            NotificationService notificationService,
+            IdentityClient identityClient,
+            JwtService jwtService) {
+        this(userService, notificationService, identityClient, jwtService, new RegistrationOtpService());
     }
 
     @Autowired
     public AuthOrchestrator(UserService userService,
             NotificationService notificationService,
             IdentityClient identityClient,
-            @Autowired(required = false) JwtService jwtService) {
+            @Autowired(required = false) JwtService jwtService,
+            @Autowired(required = false) RegistrationOtpService registrationOtpService) {
         this.userService = userService;
         this.notificationService = notificationService;
         this.identityClient = identityClient;
         this.jwtService = jwtService;
+        this.registrationOtpService = registrationOtpService != null ? registrationOtpService : new RegistrationOtpService();
     }
 
     /**
@@ -106,10 +116,31 @@ public class AuthOrchestrator {
     }
 
     /**
+     * Envía un código OTP de verificación al correo antes del registro.
+     * Valida que no sea un dominio inventado (@oficioya.com) y que el correo no esté ya registrado.
+     */
+    public void sendRegistrationCode(String email) {
+        String normalizedEmail = email != null ? email.trim() : "";
+        if (normalizedEmail.toLowerCase().endsWith("@oficioya.com") || normalizedEmail.toLowerCase().endsWith("@oficioya")) {
+            throw new IllegalArgumentException("El dominio @oficioya.com no es un correo válido para recibir notificaciones.");
+        }
+        if (userService.findByEmail(normalizedEmail).isPresent()) {
+            throw new DuplicateUserException();
+        }
+        String code = registrationOtpService.generateCode(normalizedEmail);
+        notificationService.sendRegistrationVerificationCode(normalizedEmail, code, RegistrationOtpService.VALID_MINUTES);
+        log.info("Código de verificación de registro generado y enviado para email={}", normalizedEmail);
+    }
+
+    /**
      * Registra un usuario (saga). Valida todo antes de crear nada, crea el perfil en Users y
      * la credencial en Identity. Si la credencial falla, borra el perfil creado.
      */
     public UserDto register(RegisterRequest request) {
+        if (request.code() != null && !request.code().isBlank()) {
+            registrationOtpService.verifyCode(request.email(), request.code());
+        }
+
         if (request.roles() != null) {
             boolean rolProhibido = request.roles().stream()
                     .anyMatch(r -> r.equalsIgnoreCase("ADMIN") || r.equalsIgnoreCase("SERVICE"));
