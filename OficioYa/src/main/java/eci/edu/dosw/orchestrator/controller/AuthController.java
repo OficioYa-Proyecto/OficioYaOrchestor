@@ -49,15 +49,17 @@ public class AuthController {
         this.authOrchestrator = authOrchestrator;
     }
 
+    @Operation(summary = "Iniciar sesión", description = "Autentica al usuario validando sus credenciales en Identity y consulta sus roles activos en Users. Emite un token JWT con vigencia de 15 minutos.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Autenticación exitosa, token JWT generado"),
+        @ApiResponse(responseCode = "400", description = "Formato de correo o contraseña no suministrados",
+                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
         @ApiResponse(responseCode = "401", description = "Credenciales inválidas o usuario inactivo",
                      content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
         @ApiResponse(responseCode = "423", description = "Cuenta bloqueada temporalmente por intentos fallidos",
                      content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @PostMapping("/login")
-
     public LoginResponse login(@Valid @RequestBody LoginRequest request) {
         return authOrchestrator.login(request);
     }
