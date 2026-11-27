@@ -1,6 +1,7 @@
 package eci.edu.dosw.notification;
 
 import eci.edu.dosw.security.JwtService;
+import eci.edu.dosw.security.LogMask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,10 +77,11 @@ public class HttpNotificationService implements NotificationService {
                     .retrieve()
                     .toBodilessEntity();
 
-            log.info("Notificación por correo ({}) enviada a {}", payload.type(), payload.to());
+            log.info("Notificación por correo ({}) enviada a {}", payload.type(), LogMask.email(payload.to()));
         } catch (Exception e) {
             log.warn("No se pudo enviar correo ({}) a {} vía Notification service: {}",
-                    payload.type(), payload.to(), e.getMessage());
+                    payload.type(), LogMask.email(payload.to()), e.getMessage());
+                    
         }
     }
 }
