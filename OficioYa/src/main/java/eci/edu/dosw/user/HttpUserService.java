@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
+import eci.edu.dosw.security.LogMask;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -82,7 +83,9 @@ public class HttpUserService implements UserService {
         } catch (HttpClientErrorException.NotFound e) {
             return Optional.empty();
         } catch (Exception e) {
-            log.warn("Error al consultar usuario con email {}: {}", email, e.getMessage());
+            // No se registra e.getMessage(): en errores de conexión incluye la URL con el
+            // correo.
+            log.warn("Error al consultar usuario con email {}: {}", LogMask.email(email), e.getClass().getSimpleName());
             throw new UsersServiceUnavailableException("El microservicio de usuarios no está disponible", e);
         }
     }

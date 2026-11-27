@@ -24,6 +24,7 @@ import eci.edu.dosw.user.UserService;
 import eci.edu.dosw.security.JwtService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import eci.edu.dosw.security.LogMask;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -129,7 +130,7 @@ public class AuthOrchestrator {
         }
         String code = registrationOtpService.generateCode(normalizedEmail);
         notificationService.sendRegistrationVerificationCode(normalizedEmail, code, RegistrationOtpService.VALID_MINUTES);
-        log.info("Código de verificación de registro generado y enviado para email={}", normalizedEmail);
+        log.info("Código de verificación de registro generado y enviado para email={}", LogMask.email(normalizedEmail));
     }
 
     /**
